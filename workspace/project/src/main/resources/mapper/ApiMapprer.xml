@@ -1,0 +1,29 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mapper.ApiMapper">
+
+	<!-- 사진 정보 삽입 -->
+	<insert id="insertApi">
+		INSERT INTO api (galTitle, galPhotographyMonth, galPhotographyLocation,
+		galPhotographer, galWebImageUrl)
+		VALUES (#{galTitle}, #{galPhotographyMonth}, #{galPhotographyLocation},
+		#{galPhotographer}, #{galWebImageUrl})
+	</insert>
+
+	<!-- 사진 정보 업데이트 -->
+	<update id="updateApi">
+		UPDATE api
+		SET galTitle = #{galTitle},
+		galPhotographyMonth = #{galPhotographyMonth},
+		galPhotographyLocation = #{galPhotographyLocation},
+		galPhotographer = #{galPhotographer},
+		galWebImageUrl = #{galWebImageUrl}
+		WHERE id = #{id}
+	</update>
+
+
+	<!-- 사진 정보 삭제 -->
+	<delete id="deleteApi">
+		DELETE FROM api WHERE id = #{id}
+	</delete>
+
+</mapper>

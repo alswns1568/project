@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<title>공공데이터 관리</title>
+	<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 20px;
+		}
+
+		h1 {
+			text-align: center;
+		}
+
+		select,
+		input[type="button"],
+		button {
+			padding: 10px;
+			margin: 10px;
+			font-size: 16px;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 20px;
+		}
+
+		th,
+		td {
+			padding: 10px;
+			text-align: left;
+			border: 1px solid #ddd;
+		}
+
+		th {
+			background-color: #f4f4f4;
+		}
+
+		img {
+			max-width: 100px;
+		}
+
+		#editForm {
+			margin-top: 20px;
+			padding: 20px;
+			border: 1px solid #ddd;
+			border-radius: 5px;
+			background-color: #f9f9f9;
+		}
+
+		#editForm input,
+		#editForm button {
+			display: block;
+			margin: 10px 0;
+			width: 100%;
+			padding: 10px;
+			font-size: 16px;
+		}
+
+		#editForm button {
+			background-color: #4CAF50;
+			color: white;
+			border: none;
+			cursor: pointer;
+		}
+
+		#editForm button.cancel {
+			background-color: #f44336;
+		}
+	</style>
+</head>
+
+<body>
+	<h1>공공데이터 관리</h1>
+	<p>공공데이터 조회</p>
+	<select id="mobileOS">
+		<option>IOS</option>
+		<option>AND</option>
+		<option>WIN</option>
+		<option>ETC</option>
+	</select>
+	<input type="button" value="조회하기(DB저장)" onclick="doing()">
+
+	<table id="resultTbl">
+		<thead>
+			<tr>
+				<th>번호</th>
+				<th>사진이름</th>
+				<th>사진 날짜</th>
+				<th>사진 위치</th>
+				<th>사진 찍은 포토그래퍼</th>
+				<th>사진 Url</th>
+				<th>Actions</th>
+			</tr>
+		</thead>
+		<tbody></tbody>
+	</table>
+
+	<!-- 수정 폼 -->
+	<div id="editForm" style="display:none;">
+		<h3>수정하기</h3>
+		<input type="hidden" id="editId" />
+		<input type="text" id="editTitle" placeholder="사진이름" />
+		<input type="text" id="editDate" placeholder="사진 날짜" />
+		<input type="text" id="editLocation" placeholder="사진 위치" />
+		<input type="text" id="editPhotographer" placeholder="사진 찍은 포토그래퍼" />
+		<input type="text" id="editUrl" placeholder="사진 Url" />
+		<button onclick="updatePhoto()">수정하기</button>
+		<button class="cancel" onclick="hideEditForm()">취소</button>
+	</div>
+
+	<script>
+		function doing() {
+			console.log("데이터 가져오기 시작");
+			$.ajax({
+				url: "get", // 데이터를 가져오는 API 엔드포인트
+				method: "POST",
+				data: {mobileOS: $("#mobileOS").val()},
+				success: function (data) {
+					const items = data.response.body.items.item;
+					let txt = "";
+					let sendData = [];
+					let counter = 1; // 카운터 초기화
+					for (let item of items) {
+						// 화면에 데이터 띄우기
+						txt += `<tr data-id="${counter}">`; // data-id를 올바르게 설정
+						txt += `<td>${counter}</td>`;
+						txt += `<td>${item.galTitle}</td>`;
+						txt += `<td>${item.galPhotographyMonth}</td>`;
+						txt += `<td>${item.galPhotographyLocation}</td>`;
+						txt += `<td>${item.galPhotographer}</td>`;
+						txt += `<td><img src="${item.galWebImageUrl}" alt="${item.galTitle}"></td>`;
+						txt += `<td>
+                                <button onclick="showEditForm(${counter}, '${item.galTitle}', '${item.galPhotographyMonth}', '${item.galPhotographyLocation}', '${item.galPhotographer}', '${item.galWebImageUrl}')">수정</button>
+                                <button onclick="deletePhoto(${counter})">삭제</button>
+                            </td>`;
+						txt += "</tr>";
+
+						counter++; // 카운터 증가
+
+						// 서버에 보낼 데이터로 변환
+						sendData.push({
+							galTitle: item.galTitle,
+							galPhotographyMonth: item.galPhotographyMonth,
+							galPhotographyLocation: item.galPhotographyLocation,
+							galPhotographer: item.galPhotographer,
+							galWebImageUrl: item.galWebImageUrl
+						});
+					}
+
+					// 테이블에 데이터 삽입
+					$("#resultTbl tbody").html(txt);
+
+					// 가져온 데이터를 서버로 전송
+					$.ajax({
+						url: "/api/add", // 데이터를 저장할 API 엔드포인트
+						method: "POST",
+						contentType: "application/json",
+						data: JSON.stringify(sendData),
+						success: function (response) {
+							alert("데이터가 성공적으로 저장되었습니다.");
+						},
+						error: function (error) {
+							console.error("데이터 저장 실패:", error);
+							alert("데이터 저장 중 오류가 발생했습니다.");
+						}
+					});
+				},
+				error: function (error) {
+					console.error("데이터 가져오기 실패:", error);
+					alert("데이터를 가져오는 중 오류가 발생했습니다.");
+				}
+			});
+		}
+
+		function showEditForm(id, title, date, location, photographer, url) {
+			$('#editId').val(id);
+			$('#editTitle').val(title);
+			$('#editDate').val(date);
+			$('#editLocation').val(location);
+			$('#editPhotographer').val(photographer);
+			$('#editUrl').val(url);
+			$('#editForm').show();
+
+			// 수정 폼이 보이도록 스크롤 조정
+			$('html, body').animate({
+				scrollTop: $('#editForm').offset().top
+			}, 500);
+		}
+
+		function hideEditForm() {
+			$('#editForm').hide();
+		}
+
+		function updatePhoto() {
+			const id = $('#editId').val();
+			const updatedData = {
+				galTitle: $('#editTitle').val(),
+				galPhotographyMonth: $('#editDate').val(),
+				galPhotographyLocation: $('#editLocation').val(),
+				galPhotographer: $('#editPhotographer').val(),
+				galWebImageUrl: $('#editUrl').val()
+			};
+
+			$.ajax({
+				url: `/api/update/${id}`, // API 엔드포인트 확인
+				method: "POST",
+				contentType: "application/json",
+				data: JSON.stringify(updatedData),
+				success: function (data) {
+					alert("아이템이 성공적으로 업데이트되었습니다.");
+					hideEditForm();
+					updateTableRow(data); // 수정된 데이터로 테이블 업데이트
+				},
+				error: function (error) {
+					console.error("업데이트 실패:", error);
+					alert("아이템 업데이트 중 오류가 발생했습니다.");
+				}
+			});
+		}
+
+		function updateTableRow(updatedPhoto) {
+			const row = $(`#resultTbl tbody tr[data-id="${updatedPhoto.id}"]`);
+			if (row.length > 0) {
+				row.find('td:nth-child(2)').text(updatedPhoto.galTitle);
+				row.find('td:nth-child(3)').text(updatedPhoto.galPhotographyMonth);
+				row.find('td:nth-child(4)').text(updatedPhoto.galPhotographyLocation);
+				row.find('td:nth-child(5)').text(updatedPhoto.galPhotographer);
+				row.find('td:nth-child(6) img').attr('src', updatedPhoto.galWebImageUrl);
+			}
+		}
+
+		function deletePhoto(id) {
+			$.ajax({
+				url: `/api/delete/${id}`, // API 엔드포인트 확인
+				method: "DELETE",
+				success: function (response) {
+					alert("아이템이 성공적으로 삭제되었습니다.");
+					// 테이블에서 삭제된 행 제거
+					$(`#resultTbl tbody tr[data-id="${id}"]`).remove();
+				},
+				error: function (error) {
+					console.error("삭제 실패:", error);
+					alert("아이템 삭제 중 오류가 발생했습니다.");
+				}
+			});
+		}
+	</script>
+
+
+</body>
+
+</html>
